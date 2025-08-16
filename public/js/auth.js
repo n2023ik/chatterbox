@@ -2,6 +2,7 @@
 class AuthManager {
     constructor(app) {
         this.app = app;
+        this.API_URL = 'https://chatterbox-vly4.onrender.com'; // Render backend
         this.setupEventListeners();
     }
 
@@ -51,7 +52,7 @@ class AuthManager {
                     <span>Connecting...</span>
                 `;
             }
-            window.location.href = '/api/auth/google';
+            window.location.href = `${this.API_URL}/api/auth/google`;
         } catch (error) {
             console.error('Google login error:', error);
             this.app.ui.showToast('Failed to initiate Google login', 'error');
@@ -61,11 +62,8 @@ class AuthManager {
 
     async logout() {
         if (confirm('Are you sure you want to logout?')) {
-            // Clear local storage
             localStorage.removeItem('authToken');
             localStorage.removeItem('userData');
-            
-            // Redirect to home page to force a full app reload
             window.location.href = '/';
         }
     }
@@ -77,12 +75,13 @@ class AuthManager {
         }
         try {
             console.log('Making request to verify token...');
-            const response = await fetch('/api/auth/verify', {
+            const response = await fetch(`${this.API_URL}/api/auth/verify`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
-                }
+                },
+                credentials: 'include'
             });
 
             console.log('Token verification response status:', response.status);
@@ -95,17 +94,15 @@ class AuthManager {
             console.log('Token verification response data:', data);
             
             if (data.success && data.user) {
-                // Store user data in local storage upon successful verification
                 localStorage.setItem('userData', JSON.stringify(data.user));
                 console.log('User data stored in localStorage');
                 return data.user;
             } else {
-                console.log('Token verification failed - no success or user data');
+                console.log('Token verification failed');
                 return null;
             }
         } catch (error) {
             console.error('Token verification error:', error);
-            // If token is invalid, clear it from storage
             localStorage.removeItem('authToken');
             localStorage.removeItem('userData');
             return null;
@@ -114,9 +111,10 @@ class AuthManager {
 
     async updateProfile(profileData) {
         try {
-            const response = await this.app.makeAuthenticatedRequest('/api/auth/profile', {
+            const response = await this.app.makeAuthenticatedRequest(`${this.API_URL}/api/auth/profile`, {
                 method: 'PUT',
-                body: JSON.stringify(profileData)
+                body: JSON.stringify(profileData),
+                credentials: 'include'
             });
 
             if (response.ok) {
@@ -149,17 +147,14 @@ class AuthManager {
     async handleOAuthCallback(token) {
         try {
             console.log('Handling OAuth callback with token:', token);
-            // Store the token
             localStorage.setItem('authToken', token);
             console.log('Token stored in localStorage');
-            // Verify the token and get user data
             const user = await this.verifyToken(token);
             if (user) {
                 this.app.currentUser = user;
                 this.app.ui.showToast('Successfully logged in!', 'success');
                 await this.app.initializeApp();
             } else {
-                // If token is invalid, clear it and show login screen
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('userData');
                 this.app.ui.showToast('Authentication failed. Please login again.', 'error');
