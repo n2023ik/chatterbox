@@ -1,24 +1,12 @@
-// routes/chat.js
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
-const User = require('../models/User');
 
 const router = express.Router();
 
-// Helper: safe pagination numbers
-function parsePageLimit(page, limit, defaultPage = 1, defaultLimit = 20) {
-  const p = Number.isFinite(Number(page)) ? parseInt(page, 10) : defaultPage;
-  const l = Number.isFinite(Number(limit)) ? parseInt(limit, 10) : defaultLimit;
-  const safePage = p > 0 ? p : defaultPage;
-  const safeLimit = l > 0 ? l : defaultLimit;
-  return { page: safePage, limit: safeLimit, skip: (safePage - 1) * safeLimit };
-}
-
-// Configure multer for file uploads (images, audio, short videos and common docs)
+// Multer setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => {
@@ -29,28 +17,33 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|gif|pdf|doc|docx|txt|mp3|wav|ogg|mp4|webm|mkv|mov/;
-    const extOk = allowed.test(path.extname(file.originalname).toLowerCase());
-    const mimeOk = allowed.test(file.mimetype);
-    if (extOk && mimeOk) return cb(null, true);
+    const ok = allowed.test(path.extname(file.originalname).toLowerCase()) && allowed.test(file.mimetype);
+    if (ok) return cb(null, true);
     cb(new Error('Invalid file type'));
   }
 });
+
+function parsePageLimit(page, limit, defaultPage = 1, defaultLimit = 20) {
+  const p = parseInt(page) || defaultPage;
+  const l = parseInt(limit) || defaultLimit;
+  return { page: p, limit: l, skip: (p - 1) * l };
+}
 
 // GET /api/chat - list user's chats
 router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
-    const { skip, limit: l, page: p } = parsePageLimit(page, limit, 1, 20);
+    const { skip } = parsePageLimit(page, limit);
 
     const chats = await Chat.find({ participants: req.user._id, isActive: true })
       .populate('participants', 'name email avatar isOnline lastSeen status')
       .populate({ path: 'lastMessage', populate: { path: 'sender', select: 'name email avatar' } })
       .sort({ lastActivity: -1 })
       .skip(skip)
-      .limit(l);
+      .limit(parseInt(limit));
 
     const formatted = chats.map(chat => {
       const other = chat.participants.find(p => p._id.toString() !== req.user._id.toString());
@@ -66,7 +59,7 @@ router.get('/', async (req, res) => {
       };
     });
 
-    res.json({ success: true, chats: formatted, pagination: { page: p, limit: l, hasMore: chats.length === l } });
+    res.json({ success: true, chats: formatted, pagination: { page: parseInt(page), limit: parseInt(limit), hasMore: chats.length === parseInt(limit) } });
   } catch (err) {
     console.error('Get chats error:', err);
     res.status(500).json({ success: false, message: 'Server error getting chats' });
@@ -83,45 +76,33 @@ router.get('/:id', async (req, res) => {
     if (!chat) return res.status(404).json({ success: false, message: 'Chat not found' });
 
     const other = chat.participants.find(p => p._id.toString() !== req.user._id.toString());
-    res.json({
-      success: true,
-      chat: {
-        _id: chat._id,
-        chatType: chat.chatType,
-        chatName: chat.chatName || other?.name || 'Unknown',
-        participants: chat.participants,
-        otherParticipant: other,
-        lastMessage: chat.lastMessage,
-        lastActivity: chat.lastActivity,
-        createdAt: chat.createdAt
-      }
-    });
+    res.json({ success: true, chat: { _id: chat._id, chatType: chat.chatType, chatName: chat.chatName || other?.name || 'Unknown', participants: chat.participants, otherParticipant: other, lastMessage: chat.lastMessage, lastActivity: chat.lastActivity, createdAt: chat.createdAt } });
   } catch (err) {
     console.error('Get chat error:', err);
     res.status(500).json({ success: false, message: 'Server error getting chat' });
   }
 });
 
-// GET /api/chat/:id/messages - list messages (paginated)
+// GET messages
 router.get('/:id/messages', async (req, res) => {
   try {
     const { page = 1, limit = 50 } = req.query;
-    const { page: p, limit: l } = parsePageLimit(page, limit, 1, 50);
+    const { skip } = parsePageLimit(page, limit, 1, 50);
 
     const chat = await Chat.findOne({ _id: req.params.id, participants: req.user._id });
     if (!chat) return res.status(404).json({ success: false, message: 'Chat not found' });
 
-    const messages = await Message.getChatMessages(req.params.id, p, l);
+    const messages = await Message.getChatMessages(req.params.id, parseInt(page), parseInt(limit));
     await Message.markAsRead(req.params.id, req.user._id);
 
-    res.json({ success: true, messages: messages.reverse(), pagination: { page: p, limit: l, hasMore: messages.length === l } });
+    res.json({ success: true, messages: messages.reverse(), pagination: { page: parseInt(page), limit: parseInt(limit), hasMore: messages.length === parseInt(limit) } });
   } catch (err) {
     console.error('Get messages error:', err);
     res.status(500).json({ success: false, message: 'Server error getting messages' });
   }
 });
 
-// POST /api/chat/:id/messages - send a message
+// POST message
 router.post('/:id/messages', async (req, res) => {
   try {
     const { content, messageType = 'text' } = req.body;
@@ -152,11 +133,10 @@ router.post('/:id/messages', async (req, res) => {
   }
 });
 
-// POST /api/chat/:id/upload - upload file and send as message
+// Upload file and send
 router.post('/:id/upload', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
-
     const chat = await Chat.findOne({ _id: req.params.id, participants: req.user._id });
     if (!chat) return res.status(404).json({ success: false, message: 'Chat not found' });
 
@@ -165,16 +145,7 @@ router.post('/:id/upload', upload.single('file'), async (req, res) => {
     else if (req.file.mimetype.startsWith('audio/')) messageType = 'audio';
     else if (req.file.mimetype.startsWith('video/')) messageType = 'video';
 
-    const message = new Message({
-      chat: req.params.id,
-      sender: req.user._id,
-      content: req.body.caption || req.file.originalname,
-      messageType,
-      fileUrl: `/uploads/${req.file.filename}`,
-      fileName: req.file.originalname,
-      fileSize: req.file.size
-    });
-
+    const message = new Message({ chat: req.params.id, sender: req.user._id, content: req.body.caption || req.file.originalname, messageType, fileUrl: `/uploads/${req.file.filename}`, fileName: req.file.originalname, fileSize: req.file.size });
     await message.save();
     await message.populate('sender', 'name email avatar');
 
@@ -195,7 +166,7 @@ router.post('/:id/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// PUT /api/chat/:id/messages/:messageId - edit a message
+// Edit message
 router.put('/:id/messages/:messageId', async (req, res) => {
   try {
     const { content } = req.body;
@@ -216,7 +187,7 @@ router.put('/:id/messages/:messageId', async (req, res) => {
   }
 });
 
-// DELETE /api/chat/:id/messages/:messageId - delete a message
+// Delete message
 router.delete('/:id/messages/:messageId', async (req, res) => {
   try {
     const message = await Message.findOne({ _id: req.params.messageId, chat: req.params.id, sender: req.user._id });
@@ -229,15 +200,13 @@ router.delete('/:id/messages/:messageId', async (req, res) => {
   }
 });
 
-// POST /api/chat/:id/messages/:messageId/react - add reaction
+// Reactions
 router.post('/:id/messages/:messageId/react', async (req, res) => {
   try {
     const { emoji } = req.body;
     if (!emoji) return res.status(400).json({ success: false, message: 'Emoji is required' });
-
     const message = await Message.findOne({ _id: req.params.messageId, chat: req.params.id, isDeleted: false });
     if (!message) return res.status(404).json({ success: false, message: 'Message not found' });
-
     await message.addReaction(req.user._id, emoji);
     res.json({ success: true, message: 'Reaction added successfully' });
   } catch (err) {
@@ -246,12 +215,10 @@ router.post('/:id/messages/:messageId/react', async (req, res) => {
   }
 });
 
-// DELETE /api/chat/:id/messages/:messageId/react - remove reaction
 router.delete('/:id/messages/:messageId/react', async (req, res) => {
   try {
     const message = await Message.findOne({ _id: req.params.messageId, chat: req.params.id, isDeleted: false });
     if (!message) return res.status(404).json({ success: false, message: 'Message not found' });
-
     await message.removeReaction(req.user._id);
     res.json({ success: true, message: 'Reaction removed successfully' });
   } catch (err) {
@@ -260,12 +227,11 @@ router.delete('/:id/messages/:messageId/react', async (req, res) => {
   }
 });
 
-// DELETE /api/chat/:id - leave/delete chat
+// Leave/delete chat
 router.delete('/:id', async (req, res) => {
   try {
     const chat = await Chat.findOne({ _id: req.params.id, participants: req.user._id });
     if (!chat) return res.status(404).json({ success: false, message: 'Chat not found' });
-
     chat.isActive = false;
     await chat.save();
     res.json({ success: true, message: 'Chat deleted successfully' });
@@ -275,7 +241,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// POST /api/chat/rooms - create group
+// Group rooms
 router.post('/rooms', async (req, res) => {
   try {
     const { chatName, participantIds = [] } = req.body;
@@ -284,16 +250,12 @@ router.post('/rooms', async (req, res) => {
 
     const group = new Chat({ participants, chatType: 'group', chatName: chatName || 'New Group', createdBy: req.user._id });
     await group.save();
-
     const populated = await Chat.findById(group._id).populate('participants', 'name email avatar isOnline lastSeen status');
 
-    // emit to participants if io exists
     try {
       const io = req.app.get('io');
       if (io && populated && populated.participants) {
-        populated.participants.forEach(p => {
-          if (p && p._id) io.to(p._id.toString()).emit('group_created', { chat: populated });
-        });
+        populated.participants.forEach(p => { if (p && p._id) io.to(p._id.toString()).emit('group_created', { chat: populated }); });
       }
     } catch (e) {
       console.error('Emit group_created error:', e);
@@ -306,12 +268,9 @@ router.post('/rooms', async (req, res) => {
   }
 });
 
-// GET /api/chat/rooms - list groups
 router.get('/rooms', async (req, res) => {
   try {
-    const rooms = await Chat.find({ chatType: 'group', participants: req.user._id })
-      .populate('participants', 'name email avatar isOnline lastSeen status')
-      .sort({ lastActivity: -1 });
+    const rooms = await Chat.find({ chatType: 'group', participants: req.user._id }).populate('participants', 'name email avatar isOnline lastSeen status').sort({ lastActivity: -1 });
     res.json({ success: true, rooms });
   } catch (err) {
     console.error('List rooms error:', err);
@@ -319,16 +278,12 @@ router.get('/rooms', async (req, res) => {
   }
 });
 
-// GET /api/chat/rooms/:id/messages - messages for a room
 router.get('/rooms/:id/messages', async (req, res) => {
   try {
     const { page = 1, limit = 50 } = req.query;
-    const { page: p, limit: l } = parsePageLimit(page, limit, 1, 50);
-
-    const messages = await Message.getChatMessages(req.params.id, p, l);
+    const messages = await Message.getChatMessages(req.params.id, parseInt(page), parseInt(limit));
     await Message.markAsRead(req.params.id, req.user._id);
-
-    res.json({ success: true, messages: messages.reverse(), pagination: { page: p, limit: l, hasMore: messages.length === l } });
+    res.json({ success: true, messages: messages.reverse(), pagination: { page: parseInt(page), limit: parseInt(limit), hasMore: messages.length === parseInt(limit) } });
   } catch (err) {
     console.error('Get room messages error:', err);
     res.status(500).json({ success: false, message: 'Server error getting room messages' });

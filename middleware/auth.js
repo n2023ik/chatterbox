@@ -1,15 +1,16 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const env = require('../config/env');
 
 const authMiddleware = async (req, res, next) => {
   try {
     // Get token from header
     const authHeader = req.header('Authorization');
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'No token provided, authorization denied' 
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided, authorization denied'
       });
     }
 
@@ -17,28 +18,22 @@ const authMiddleware = async (req, res, next) => {
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     if (!token) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'No token provided, authorization denied' 
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided, authorization denied'
       });
     }
 
-<<<<<<< HEAD
-      const env = require('../config/env');
-      // Verify token
-      const decoded = jwt.verify(token, env.JWT_SECRET);
-=======
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
->>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
+    // Verify token using centralized env JWT secret
+    const decoded = jwt.verify(token, env.JWT_SECRET || process.env.JWT_SECRET || 'your-secret-key');
 
     // Get user from database
     const user = await User.findById(decoded.id).select('-googleId');
-    
+
     if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Token is not valid, user not found' 
+      return res.status(401).json({
+        success: false,
+        message: 'Token is not valid, user not found'
       });
     }
 
@@ -47,25 +42,25 @@ const authMiddleware = async (req, res, next) => {
     next();
 
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    
+    // Only log server-side errors; token errors return a clear 401
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Token is not valid' 
-      });
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Token has expired' 
+      return res.status(401).json({
+        success: false,
+        message: 'Token is not valid'
       });
     }
 
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error in authentication' 
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token has expired'
+      });
+    }
+
+    console.error('Auth middleware error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error in authentication'
     });
   }
 };
@@ -74,31 +69,26 @@ const authMiddleware = async (req, res, next) => {
 const optionalAuth = async (req, res, next) => {
   try {
     const authHeader = req.header('Authorization');
-    
+
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      
+
       if (token) {
-<<<<<<< HEAD
-  const env = require('../config/env');
-  const decoded = jwt.verify(token, env.JWT_SECRET);
-=======
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
->>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
+        const decoded = jwt.verify(token, env.JWT_SECRET || process.env.JWT_SECRET || 'your-secret-key');
         const user = await User.findById(decoded.id).select('-googleId');
-        
+
         if (user) {
           req.user = user;
         }
       }
     }
-    
+
     next();
   } catch (error) {
-    // Continue without authentication
+    // Continue without authentication on error
     next();
   }
 };
 
-module.exports = authMiddleware; // Step 1: Exports the function
-module.exports.optionalAuth = optionalAuth; // Step 2: Adds a new property to the exported function
+module.exports = authMiddleware;
+module.exports.optionalAuth = optionalAuth;

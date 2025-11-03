@@ -27,7 +27,6 @@ NODE_ENV=production
 ## Local Development
 
 1. Clone the repository
-<<<<<<< HEAD
 2. Create a `.env` file in the project root with the following minimum variables (for local dev):
 
 ```
@@ -65,11 +64,6 @@ Testing the new features
 
 - Update Profile: Open Settings (Ctrl/Cmd + ,), pick an avatar, edit name/status, click "Save Changes". The client will upload avatar and update profile via `PUT /api/users/profile`.
 - Group Chat: Click the "+" (New Chat) button. When prompted type `create` to create a new group, provide a group name, and the group will be created and opened. Type `list` to see groups you participate in.
-=======
-2. Run `./setup.sh` to set up the project
-3. Update `.env` with your credentials
-4. Run `npm start` to start the server
->>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
 
 ## Production Deployment
 

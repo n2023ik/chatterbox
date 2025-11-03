@@ -3,17 +3,11 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken'); // 👈 **1. Import the JWT library**
 const router = express.Router();
 const protect = require('../middleware/auth');
-<<<<<<< HEAD
 const env = require('../config/env');
-=======
->>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
-
-console.log('🔧 Auth routes module loaded');
 
 // @route   GET /api/auth/google
 // @desc    Authenticate with Google
 // @access  Public
-console.log('🔧 Registering /google route');
 router.get('/google', passport.authenticate('google', {
     scope: ['profile', 'email']
 }));
@@ -21,7 +15,6 @@ router.get('/google', passport.authenticate('google', {
 // @route   GET /api/auth/google/callback
 // @desc    Google auth callback
 // @access  Public
-console.log('🔧 Registering /google/callback route');
 router.get('/google/callback',
     passport.authenticate('google', {
         failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}?error=auth_failed`,
@@ -36,19 +29,9 @@ router.get('/google/callback',
             avatar: req.user.avatar
         };
 
-<<<<<<< HEAD
-        const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign(payload, env.JWT_SECRET || process.env.JWT_SECRET || 'your-super-secret-key', { expiresIn: '1d' });
 
-        res.redirect(`${env.FRONTEND_URL}?token=${token}`);
-=======
-        const token = jwt.sign(
-            payload,
-            process.env.JWT_SECRET || 'your-super-secret-key',
-            { expiresIn: '1d' }
-        );
-
-        res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?token=${token}`);
->>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
+    res.redirect(`${env.FRONTEND_URL || process.env.FRONTEND_URL || 'http://localhost:3000'}?token=${token}`);
     }
 );
 
@@ -70,7 +53,6 @@ router.post('/logout', (req, res) => {
 router.post('/verify', protect, (req, res) => {
     // If you have a middleware that verifies the token and attaches the user,
     // you can simply return the user data.
-    console.log('🔍 /api/auth/verify called. req.user:', req.user);
     if (req.user) {
         res.json({
             success: true,
@@ -78,19 +60,11 @@ router.post('/verify', protect, (req, res) => {
         });
     } else {
         // This part is typically handled by the auth middleware itself
-        console.log('❌ /api/auth/verify failed: Not authenticated or token invalid');
         res.status(401).json({
             success: false,
             message: 'Not authenticated or token invalid'
         });
     }
-});
-
-// Debug route to catch all requests to auth router
-router.use('*', (req, res, next) => {
-    console.log(`🔧 Auth router received request: ${req.method} ${req.path}`);
-    console.log(`🔧 Full URL: ${req.originalUrl}`);
-    next();
 });
 
 module.exports = router;

@@ -10,19 +10,19 @@ const morgan = require('morgan');
 const session = require('express-session');
 const passport = require('passport');
 const path = require('path');
+// Load local env override file if present (config/.env.local). This is helpful for local dev.
+require('dotenv').config({ path: path.join(__dirname, 'config', '.env.local') });
+// Also load root .env if present (will not override values already set by .env.local)
 require('dotenv').config();
-<<<<<<< HEAD
 const env = require('./config/env');
-=======
->>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
 
 // --- Import Routes ---
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
-const chatRoutes = require('./routes/chat');
+const chatRoutes = require('./routes/chat_clean');
 
 // --- Import Middleware ---
-const protect = require('./middleware/auth'); 
+const protect = require('./middleware/auth');
 
 // --- Import Socket Handler ---
 const socketHandler = require('./config/socket');
@@ -32,8 +32,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    methods: ["GET", "POST"],
+    origin: env.FRONTEND_URL || process.env.FRONTEND_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST'],
     credentials: true
   }
 });
@@ -47,7 +47,7 @@ app.use(compression());
 
 // --- CORS configuration ---
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  origin: env.FRONTEND_URL || process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
 }));
 
@@ -59,28 +59,17 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // --- Session and Authentication Middleware ---
-<<<<<<< HEAD
 const MongoStore = require('connect-mongo');
 
 app.use(session({
-  secret: env.SESSION_SECRET,
+  secret: env.SESSION_SECRET || process.env.SESSION_SECRET || 'your-super-secret-key',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: env.MONGODB_URI, collectionName: 'sessions' }),
+  store: MongoStore.create({ mongoUrl: env.MONGODB_URI || process.env.MONGODB_URI }),
   cookie: {
     secure: isProduction,     // true in production so cookies only sent over HTTPS
     httpOnly: true,
     sameSite: isProduction ? 'none' : 'lax',
-=======
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-super-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: isProduction,     // true in production so cookies only sent over HTTPS
-    httpOnly: true,
-    sameSite: 'none',         // required for cross-site cookies
->>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
@@ -102,29 +91,12 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // --- API Routes ---
-console.log('Registering API routes...');
-
-app.get('/api/test', (req, res) => {
-  console.log(' Test route hit');
-  res.json({ message: 'Test route working' });
-});
-
-app.use('/api/*', (req, res, next) => {
-  console.log(` API request received: ${req.method} ${req.path}`);
-  console.log(` Full URL: ${req.originalUrl}`);
-  next();
-});
-
 app.use('/api/auth', authRoutes);
-console.log(' Auth routes registered at /api/auth');
 app.use('/api/users', protect, userRoutes);
-console.log(' User routes registered at /api/users');
 app.use('/api/chat', protect, chatRoutes);
-console.log(' Chat routes registered at /api/chat');
 
 // --- 404 Handler for API routes ---
 app.use('/api/*', (req, res) => {
-  console.log(` API route not found: ${req.path}`);
   res.status(404).json({ message: 'API route not found' });
 });
 
@@ -138,22 +110,19 @@ app.get('*', (req, res, next) => {
 
 // --- Socket.io ---
 socketHandler(io);
-<<<<<<< HEAD
 // expose io to route handlers
 app.set('io', io);
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-=======
->>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
 
 // --- Database Connection ---
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chatapp', {
+mongoose.connect(env.MONGODB_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/chatapp', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log(' Connected to MongoDB'))
-.catch((error) => console.error(' MongoDB connection error:', error));
+.then(() => console.log('Connected to MongoDB'))
+.catch((error) => console.error('MongoDB connection error:', error));
 
 // --- Global Error Handling ---
 app.use((err, req, res, next) => {
@@ -164,6 +133,5 @@ app.use((err, req, res, next) => {
 // --- Server Startup ---
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(` Server running on port ${PORT}`);
-  console.log(` Visit http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

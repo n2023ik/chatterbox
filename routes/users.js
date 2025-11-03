@@ -4,7 +4,6 @@ const Chat = require('../models/Chat');
 
 const router = express.Router();
 
-<<<<<<< HEAD
 // Multer for avatar uploads
 const multer = require('multer');
 const path = require('path');
@@ -13,7 +12,7 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'avatar-' + req.user._id.toString() + '-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, 'avatar-' + (req.user?._id?.toString ? req.user._id.toString() : 'anon') + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
@@ -28,9 +27,6 @@ const upload = multer({
     cb(new Error('Invalid avatar file type'));
   }
 });
-
-=======
->>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
 // @route   GET /api/users
 // @desc    Get all users (for user selection)
 // @access  Private
@@ -244,7 +240,6 @@ router.put('/status', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 // @route   PUT /api/users/profile
 // @desc    Update current user's profile (avatar, name, status, phone)
 // @access  Private
@@ -267,9 +262,6 @@ router.put('/profile', upload.single('avatar'), async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error updating profile' });
   }
 });
-
-=======
->>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
 // @route   GET /api/users/stats/overview
 // @desc    Get user statistics
 // @access  Private

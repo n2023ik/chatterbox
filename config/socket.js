@@ -14,13 +14,8 @@ module.exports = (io) => {
       if (!token) {
         return next(new Error('Authentication error'));
       }
-
-<<<<<<< HEAD
-    const env = require('./env');
-    const decoded = jwt.verify(token, env.JWT_SECRET);
-=======
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
->>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
+      const env = require('./env');
+      const decoded = jwt.verify(token, env.JWT_SECRET || process.env.JWT_SECRET || 'your-secret-key');
       const user = await User.findById(decoded.id);
       
       if (!user) {
@@ -36,7 +31,6 @@ module.exports = (io) => {
   });
 
   io.on('connection', async (socket) => {
-    console.log(`User ${socket.user.name} connected with socket ID: ${socket.id}`);
 
     try {
       // Update user online status
@@ -67,9 +61,9 @@ module.exports = (io) => {
         user: socket.user.getPublicProfile()
       });
 
-      // Send online users list to the connected user
-      const onlineUsers = await User.findOnlineUsers();
-      socket.emit('online_users', onlineUsers);
+  // Send online users list to the connected user
+  const onlineUsers = await User.findOnlineUsers();
+  socket.emit('online_users', onlineUsers);
 
       // Handle joining a chat
       socket.on('join_chat', async (data) => {
@@ -225,8 +219,6 @@ module.exports = (io) => {
 
       // Handle disconnect
       socket.on('disconnect', async () => {
-        console.log(`User ${socket.user.name} disconnected`);
-
         try {
           // Update user offline status
           await User.findByIdAndUpdate(socket.userId, {
