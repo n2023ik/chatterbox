@@ -6,12 +6,19 @@ const User = require('../models/User');
 module.exports = function(passport) {
   // --- Google OAuth 2.0 Strategy ---
   // This strategy is used for the initial login with Google.
+<<<<<<< HEAD
   const env = require('./env');
 
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: env.CALLBACK_URL || '/api/auth/google/callback'
+=======
+  passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.CALLBACK_URL || '/api/auth/callback/google'
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
   },
   async (accessToken, refreshToken, profile, done) => {
     console.log('🔑 GoogleStrategy: Google login callback fired');
@@ -40,10 +47,16 @@ module.exports = function(passport) {
 
   // --- JSON Web Token (JWT) Strategy ---
   // This strategy is used to protect API endpoints. It verifies the token from the Authorization header.
+<<<<<<< HEAD
   const envCfg = require('./env');
   const opts = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     secretOrKey: envCfg.JWT_SECRET
+=======
+  const opts = {
+    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: process.env.JWT_SECRET || 'your-secret-key'
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
   };
 
   passport.use(new JwtStrategy(opts, async (jwt_payload, done) => {

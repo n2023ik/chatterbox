@@ -15,8 +15,12 @@ module.exports = (io) => {
         return next(new Error('Authentication error'));
       }
 
+<<<<<<< HEAD
     const env = require('./env');
     const decoded = jwt.verify(token, env.JWT_SECRET);
+=======
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
       const user = await User.findById(decoded.id);
       
       if (!user) {

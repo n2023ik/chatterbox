@@ -3,7 +3,10 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken'); // 👈 **1. Import the JWT library**
 const router = express.Router();
 const protect = require('../middleware/auth');
+<<<<<<< HEAD
 const env = require('../config/env');
+=======
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
 
 console.log('🔧 Auth routes module loaded');
 
@@ -33,9 +36,19 @@ router.get('/google/callback',
             avatar: req.user.avatar
         };
 
+<<<<<<< HEAD
         const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: '1d' });
 
         res.redirect(`${env.FRONTEND_URL}?token=${token}`);
+=======
+        const token = jwt.sign(
+            payload,
+            process.env.JWT_SECRET || 'your-super-secret-key',
+            { expiresIn: '1d' }
+        );
+
+        res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?token=${token}`);
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
     }
 );
 

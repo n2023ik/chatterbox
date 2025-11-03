@@ -11,7 +11,10 @@ const session = require('express-session');
 const passport = require('passport');
 const path = require('path');
 require('dotenv').config();
+<<<<<<< HEAD
 const env = require('./config/env');
+=======
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
 
 // --- Import Routes ---
 const authRoutes = require('./routes/auth');
@@ -56,6 +59,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // --- Session and Authentication Middleware ---
+<<<<<<< HEAD
 const MongoStore = require('connect-mongo');
 
 app.use(session({
@@ -67,6 +71,16 @@ app.use(session({
     secure: isProduction,     // true in production so cookies only sent over HTTPS
     httpOnly: true,
     sameSite: isProduction ? 'none' : 'lax',
+=======
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-super-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: isProduction,     // true in production so cookies only sent over HTTPS
+    httpOnly: true,
+    sameSite: 'none',         // required for cross-site cookies
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
@@ -124,11 +138,14 @@ app.get('*', (req, res, next) => {
 
 // --- Socket.io ---
 socketHandler(io);
+<<<<<<< HEAD
 // expose io to route handlers
 app.set('io', io);
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+=======
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
 
 // --- Database Connection ---
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chatapp', {

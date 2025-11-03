@@ -4,6 +4,7 @@ const Chat = require('../models/Chat');
 
 const router = express.Router();
 
+<<<<<<< HEAD
 // Multer for avatar uploads
 const multer = require('multer');
 const path = require('path');
@@ -28,6 +29,8 @@ const upload = multer({
   }
 });
 
+=======
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
 // @route   GET /api/users
 // @desc    Get all users (for user selection)
 // @access  Private
@@ -241,6 +244,7 @@ router.put('/status', async (req, res) => {
   }
 });
 
+<<<<<<< HEAD
 // @route   PUT /api/users/profile
 // @desc    Update current user's profile (avatar, name, status, phone)
 // @access  Private
@@ -264,6 +268,8 @@ router.put('/profile', upload.single('avatar'), async (req, res) => {
   }
 });
 
+=======
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
 // @route   GET /api/users/stats/overview
 // @desc    Get user statistics
 // @access  Private

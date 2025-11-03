@@ -23,9 +23,14 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
+<<<<<<< HEAD
       const env = require('../config/env');
       // Verify token
       const decoded = jwt.verify(token, env.JWT_SECRET);
+=======
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
 
     // Get user from database
     const user = await User.findById(decoded.id).select('-googleId');
@@ -74,8 +79,12 @@ const optionalAuth = async (req, res, next) => {
       const token = authHeader.substring(7);
       
       if (token) {
+<<<<<<< HEAD
   const env = require('../config/env');
   const decoded = jwt.verify(token, env.JWT_SECRET);
+=======
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
         const user = await User.findById(decoded.id).select('-googleId');
         
         if (user) {

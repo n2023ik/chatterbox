@@ -7,6 +7,7 @@ const User = require('../models/User');
 
 const router = express.Router();
 
+<<<<<<< HEAD
 // Multer for avatar uploads and room images if needed
 const avatarStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
@@ -28,6 +29,8 @@ const avatarUpload = multer({
   }
 });
 
+=======
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -42,11 +45,19 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: {
+<<<<<<< HEAD
     fileSize: 50 * 1024 * 1024 // 50MB limit to allow short videos
   },
   fileFilter: (req, file, cb) => {
     // Allow images, documents, audio and video files
     const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt|mp3|wav|ogg|mp4|webm|mkv|mov/;
+=======
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow images, documents, and audio files
+    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt|mp3|wav|ogg/;
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
 
@@ -252,6 +263,7 @@ router.post('/:id/messages', async (req, res) => {
     chat.lastMessage = message._id;
     await chat.updateLastActivity();
 
+<<<<<<< HEAD
     // Emit via Socket.IO so participants see the message in real-time
       try {
         const io = req.app.get('io');
@@ -267,6 +279,8 @@ router.post('/:id/messages', async (req, res) => {
         console.error('Failed to emit new_message via io:', e);
       }
 
+=======
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
     res.json({
       success: true,
       message,
@@ -315,8 +329,11 @@ router.post('/:id/upload', upload.single('file'), async (req, res) => {
       messageType = 'image';
     } else if (req.file.mimetype.startsWith('audio/')) {
       messageType = 'audio';
+<<<<<<< HEAD
     } else if (req.file.mimetype.startsWith('video/')) {
       messageType = 'video';
+=======
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
     }
 
     // Create new message with file
@@ -337,6 +354,7 @@ router.post('/:id/upload', upload.single('file'), async (req, res) => {
     chat.lastMessage = message._id;
     await chat.updateLastActivity();
 
+<<<<<<< HEAD
     // Emit via Socket.IO so participants see the uploaded message in real-time
     try {
       const io = req.app.get('io');
@@ -351,6 +369,8 @@ router.post('/:id/upload', upload.single('file'), async (req, res) => {
       console.error('Failed to emit new_message after upload:', e);
     }
 
+=======
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
     res.json({
       success: true,
       message,
@@ -406,7 +426,11 @@ router.put('/:id/messages/:messageId', async (req, res) => {
     res.json({
       success: true,
       message,
+<<<<<<< HEAD
       info: 'Message updated successfully'
+=======
+      message: 'Message updated successfully'
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
     });
   } catch (error) {
     console.error('Edit message error:', error);
@@ -562,6 +586,7 @@ router.delete('/:id', async (req, res) => {
 
 module.exports = router;
 
+<<<<<<< HEAD
 // --- Group Rooms endpoints ---
 // Create a group room
 router.post('/rooms', async (req, res) => {
@@ -642,3 +667,5 @@ router.get('/rooms/:id/messages', async (req, res) => {
   }
 });
 
+=======
+>>>>>>> 9e8132601426e7f7949a64bfe5f2e014603f1259
